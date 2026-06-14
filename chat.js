@@ -1,0 +1,59 @@
+// api/chat.js — LegalMind backend seguro
+// Roda como Vercel Serverless Function
+// A chave de API fica em variável de ambiente, nunca exposta ao frontend
+
+export default async function handler(req, res) {
+  // Permite apenas POST
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Método não permitido' });
+  }
+
+  // CORS — permite seu domínio (troque pelo seu domínio real em produção)
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // Valida body
+  const { messages, system, max_tokens } = req.body;
+  if (!messages || !Array.isArray(messages)) {
+    return res.status(400).json({ error: 'Campo "messages" obrigatório' });
+  }
+
+  // Chave de API vem da variável de ambiente (nunca do frontend)
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'API key não configurada no servidor' });
+  }
+
+  try {
+    const body = {
+      model: 'claude-sonnet-4-6',
+      max_tokens: max_tokens || 1000,
+      messages,
+    };
+    if (system) body.system = system;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: data.error?.message || 'Erro na API' });
+    }
+
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error('Erro ao chamar Anthropic:', error);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+}

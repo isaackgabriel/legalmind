@@ -1,0 +1,12 @@
+{
+  "name": "legalmind",
+  "version": "1.0.0",
+  "description": "LegalMind — Plataforma Jurídica com IA",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "devDependencies": {
+    "vercel": "^33.0.0"
+  }
+}
